@@ -5,7 +5,8 @@
 //!   atlas <1bit.png> <prompts.png> <anvil.bin> <out dir>
 //!
 //! It also draws the icons from looks.icon and looks.favicon: icon.png
-//! (64 px) and icon-256.png, favicon-32.png and favicon-16.png (the hero).
+//! (64 px) and icon-256.png, favicon-32.png and favicon-16.png (the hero),
+//! and icon.ico (all of those, plus the icon at 128 px) for Windows.
 //!
 //! The out dir gets atlas.png, atlas.zig (the native game: the PNG embedded,
 //! sprite cells by looks.Sprite, the font's place) and atlas.js (the web
@@ -79,6 +80,15 @@ pub fn main(init: std.process.Init) !void {
         .{ "favicon-16.png", try scene(arena, atlas, &[1][1]looks.Look{.{looks.hero}}, 1) },
     };
     for (icons) |i| try out_dir.writeFile(io, .{ .sub_path = i[0], .data = try writeRgbaPng(arena, i[1]) });
+    // The Windows executables' icon: the same pictures at each size Windows
+    // asks for, so it never blurs pixel art by scaling it, plus 128 px.
+    try out_dir.writeFile(io, .{ .sub_path = "icon.ico", .data = try writeIco(arena, &.{
+        icons[3][1],
+        icons[2][1],
+        icons[0][1],
+        try scene(arena, atlas, &looks.icon, 2),
+        icons[1][1],
+    }) });
 
     var zig: Io.Writer.Allocating = .init(arena);
     try writeZig(&zig.writer);
@@ -260,6 +270,32 @@ fn scene(arena: Allocator, atlas: Mask, rows: anytype, scale: usize) !Image {
 }
 
 /// An 8-bit RGBA PNG.
+/// An .ico of `imgs`, each stored as a PNG, which Windows reads since Vista.
+fn writeIco(arena: Allocator, imgs: []const Image) ![]u8 {
+    var out: Io.Writer.Allocating = .init(arena);
+    const w = &out.writer;
+    try w.writeInt(u16, 0, .little); // reserved
+    try w.writeInt(u16, 1, .little); // an icon, not a cursor
+    try w.writeInt(u16, @intCast(imgs.len), .little);
+    const pngs = try arena.alloc([]u8, imgs.len);
+    var offset: u32 = @intCast(6 + 16 * imgs.len);
+    for (imgs, pngs) |img, *png| {
+        if (img.w > 256 or img.h > 256) fail("a {d}x{d} icon is too big for an .ico", .{ img.w, img.h });
+        png.* = try writeRgbaPng(arena, img);
+        try w.writeByte(@truncate(img.w)); // 0 means 256
+        try w.writeByte(@truncate(img.h));
+        try w.writeByte(0); // no palette
+        try w.writeByte(0); // reserved
+        try w.writeInt(u16, 1, .little); // colour planes
+        try w.writeInt(u16, 32, .little); // bits per pixel
+        try w.writeInt(u32, @intCast(png.len), .little);
+        try w.writeInt(u32, offset, .little);
+        offset += @intCast(png.len);
+    }
+    for (pngs) |png| try w.writeAll(png);
+    return out.written();
+}
+
 fn writeRgbaPng(arena: Allocator, img: Image) ![]u8 {
     var raw: std.ArrayList(u8) = .empty;
     for (0..img.h) |y| {

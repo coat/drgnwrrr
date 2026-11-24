@@ -81,6 +81,7 @@ pub fn build(b: *std.Build) void {
         .name = "drgnwrrr-cli",
         .root_module = cli_mod,
     });
+    addWindowsIcon(b, cli_mod, atlas);
     const install_cli = b.addInstallArtifact(exe, .{});
     install_cli.step.dependOn(&b.addInstallFileWithDir(isocline.path("LICENSE"), .{ .custom = "licenses" }, "LICENSE.isocline.txt").step);
 
@@ -237,7 +238,27 @@ fn addSdlGame(
     // A windowed game, so no console window opens behind it. Debug builds
     // keep the console for std.debug.print.
     if (target.result.os.tag == .windows) exe.subsystem = if (optimize == .debug) .console else .windows;
+    addWindowsIcon(b, mod, atlas);
     return exe;
+}
+
+/// On Windows, gives the executable `mod` is the root of the atlas tool's
+/// icon.ico, for Explorer and the taskbar. (The window's own icon is set at
+/// run time, from atlas.icon_png.)
+fn addWindowsIcon(b: *std.Build, mod: *std.Build.Module, atlas: std.Build.LazyPath) void {
+    const target = mod.resolved_target.?;
+    if (target.result.os.tag != .windows) return;
+    const rc = b.lazyImport(@This(), "rc") orelse return;
+    const rc_dep = b.lazyDependency("rc", .{}) orelse return;
+    // The script and the icon side by side, so "icon.ico" resolves.
+    const files = b.addWriteFiles();
+    _ = files.addCopyFile(atlas.path(b, "icon.ico"), "icon.ico");
+    const compiler: rc.Compiler = .init(rc_dep, .{
+        .rc_files = &.{files.add("drgnwrrr.rc", "1 ICON \"icon.ico\"\n")},
+        .target = target,
+        .optimize = mod.optimize orelse .debug,
+    });
+    mod.addObjectFile(compiler.getObjectFile());
 }
 
 /// The SDL3 game's root module (src/sdl/main.zig), or null while its lazy
