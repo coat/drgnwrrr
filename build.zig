@@ -227,7 +227,11 @@ fn addSdlGame(
     atlas: std.Build.LazyPath,
 ) ?*std.Build.Step.Compile {
     const mod = sdlModule(b, target, optimize, link_sdl, engine_mod, atlas) orelse return null;
-    return b.addExecutable(.{ .name = "drgnwrrr", .root_module = mod });
+    const exe = b.addExecutable(.{ .name = "drgnwrrr", .root_module = mod });
+    // A windowed game, so no console window opens behind it. Debug builds
+    // keep the console for std.debug.print.
+    if (target.result.os.tag == .windows) exe.subsystem = if (optimize == .debug) .console else .windows;
+    return exe;
 }
 
 /// The SDL3 game's root module (src/sdl/main.zig), or null while its lazy
