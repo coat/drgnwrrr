@@ -82,6 +82,7 @@ pub fn build(b: *std.Build) void {
         .root_module = cli_mod,
     });
     const install_cli = b.addInstallArtifact(exe, .{});
+    install_cli.step.dependOn(&b.addInstallFileWithDir(isocline.path("LICENSE"), .{ .custom = "licenses" }, "LICENSE.isocline.txt").step);
 
     // The web game: the engine as a freestanding wasm module plus web/, in
     // zig-out/web. Debug builds are too slow for the route planner's battle
@@ -115,6 +116,7 @@ pub fn build(b: *std.Build) void {
     ) orelse (native.result.os.tag == .linux and !native.result.abi.isAndroid());
     const sdl_step = b.step("sdl", "Build the native game (drgnwrrr) into zig-out/bin");
     const run_sdl_step = b.step("run-sdl", "Run the native game");
+    installSdlLicenses(b, sdl_step, .{ .custom = "licenses" });
     if (addSdlGame(b, native, optimize, link_sdl, mod, atlas)) |sdl_exe| {
         sdl_exe.root_module.strip = strip;
         const install_sdl = b.addInstallArtifact(sdl_exe, .{});
@@ -427,6 +429,16 @@ fn fixLibcFiles(b: *std.Build, apk: anytype, step: *std.Build.Step, seen: *std.A
     , .{ sysroot, sysroot, triple, crt_dir, crt_dir })));
 }
 
+/// Has `step` install into `dir` the licenses of what the native game is
+/// made of: drgnwrrr itself, the Kenney sprites, the Anvil font, SDL3 and Clay.
+fn installSdlLicenses(b: *std.Build, step: *std.Build.Step, dir: std.Build.InstallDir) void {
+    for ([_][]const u8{ "LICENSE-kenney.txt", "LICENSE-kenney-input-prompts.txt", "LICENSE-anvil-font.md" }) |name|
+        step.dependOn(&b.addInstallFileWithDir(b.path(b.fmt("assets/{s}", .{name})), dir, name).step);
+    step.dependOn(&b.addInstallFileWithDir(b.path("LICENSE"), dir, "LICENSE.drgnwrrr.txt").step);
+    if (b.lazyDependency("sdl", .{})) |sdl| step.dependOn(&b.addInstallFileWithDir(sdl.path("LICENSE.txt"), dir, "LICENSE.SDL3.txt").step);
+    if (b.lazyDependency("clay", .{})) |clay| step.dependOn(&b.addInstallFileWithDir(clay.path("LICENSE.md"), dir, "LICENSE.clay.md").step);
+}
+
 /// The PortMaster package, in zig-out/portmaster: the native game for
 /// aarch64 Linux handhelds, SDL3 built in, plus portmaster/'s launcher and
 /// metadata and the licenses of what's bundled. `portmaster-zip` also zips
@@ -461,12 +473,7 @@ fn addPortmaster(b: *std.Build, optimize: std.builtin.Optimize, romdata: std.Bui
         .{ "README.md", "README.md" },
     }) |f| step.dependOn(&b.addInstallFileWithDir(b.path(b.fmt("portmaster/{s}", .{f[0]})), .{ .custom = "portmaster" }, f[1]).step);
 
-    const licenses: std.Build.InstallDir = .{ .custom = "portmaster/drgnwrrr/licenses" };
-    for ([_][]const u8{ "LICENSE-kenney.txt", "LICENSE-kenney-input-prompts.txt", "LICENSE-anvil-font.md" }) |name|
-        step.dependOn(&b.addInstallFileWithDir(b.path(b.fmt("assets/{s}", .{name})), licenses, name).step);
-    step.dependOn(&b.addInstallFileWithDir(b.path("LICENSE"), licenses, "LICENSE.drgnwrrr.txt").step);
-    if (b.lazyDependency("sdl", .{})) |sdl| step.dependOn(&b.addInstallFileWithDir(sdl.path("LICENSE.txt"), licenses, "LICENSE.SDL3.txt").step);
-    if (b.lazyDependency("clay", .{})) |clay| step.dependOn(&b.addInstallFileWithDir(clay.path("LICENSE.md"), licenses, "LICENSE.clay.md").step);
+    installSdlLicenses(b, step, .{ .custom = "portmaster/drgnwrrr/licenses" });
 
     // zig-out/drgnwrrr.zip, for a device's PortMaster autoinstall folder.
     // -FS drops entries for files no longer in zig-out/portmaster.
