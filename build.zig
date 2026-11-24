@@ -8,6 +8,8 @@ pub fn build(b: *std.Build) void {
     // and `run` serves it. The CLI, tests and romcheck then build for the host.
     const web_target = target.result.cpu.arch.isWasm();
     const native = if (web_target) b.graph.host else target;
+    const strip = b.option(bool, "strip", "Strip the CLI and native game. Default on for ReleaseFast and ReleaseSmall") orelse
+        (optimize == .fast or optimize == .small);
 
     // The maps and NPC tables come from the ROM at build time: romextract
     // decodes them with the ROM-checked dw.Maps.fromBank0 and writes Zig source.
@@ -66,6 +68,7 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/cli/main.zig"),
         .target = native,
         .optimize = optimize,
+        .strip = strip,
         .link_libc = true,
         .imports = &.{
             .{ .name = "drgnwrrr", .module = mod },
@@ -113,6 +116,7 @@ pub fn build(b: *std.Build) void {
     const sdl_step = b.step("sdl", "Build the native game (drgnwrrr) into zig-out/bin");
     const run_sdl_step = b.step("run-sdl", "Run the native game");
     if (addSdlGame(b, native, optimize, link_sdl, mod, atlas)) |sdl_exe| {
+        sdl_exe.root_module.strip = strip;
         const install_sdl = b.addInstallArtifact(sdl_exe, .{});
         sdl_step.dependOn(&install_sdl.step);
         const run_sdl = b.addRunArtifact(sdl_exe);
