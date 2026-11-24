@@ -1,0 +1,37 @@
+.{
+    .name = .drgnwrrr,
+    .version = "0.1.0",
+    .fingerprint = 0x7b18699b38aef510, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .isocline = .{
+            .url = "git+https://github.com/daanx/isocline#8d6dc1ef95b1b46711e66eb23d39d4467a0fcdac",
+            .hash = "N-V-__8AAI8vEwDBxs8j_tnNzQ_8MiBQBrR3SXBPbov4JY9z",
+        },
+        .translate_c = .{
+            .url = "git+https://codeberg.org/ziglang/translate-c#875969d3493e245e01bf5d7860f792d8f3eb9ef5",
+            .hash = "translate_c-0.0.0-Q_BUWoFOBwAhz77Zd15HCVuhTKzdUKc94kezmCeJ7IC_",
+        },
+        .sdl = .{
+            .url = "git+https://github.com/coat/SDL.git?ref=android#00b912115a6820e7c611032e2329a567f462b28b",
+            .hash = "sdl-0.5.4+3.4.16-SDL--j3AqwHtXDaXS5jMcmiIde_XU5CFr35mav9leSki",
+            .lazy = true,
+        },
+        .clay = .{
+            .url = "git+https://github.com/nicbarker/clay#b25a31c1a152915cd7dd6796e6592273e5a10aac",
+            .hash = "N-V-__8AALPgZwA7tLqRlkCCL7OrkEhj4xZ3y_0FxgR42t0W",
+            .lazy = true,
+        },
+        .android = .{
+            .url = "git+https://github.com/coat/zig-android-sdk.git?ref=zig-0.17.0#ef2beb8ca595ad40f2f0fd005f54250918ff2daf",
+            .hash = "android-0.3.0-7iz7QtsXAgBtFAntq_ZcQvJlKUUzPMbg16iOQj03S4ps",
+            .lazy = true,
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "LICENSE",
+    },
+}

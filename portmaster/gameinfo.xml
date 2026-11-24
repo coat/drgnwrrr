@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<gameList>
+  <game>
+    <path>./drgnwrrr.sh</path>
+    <name>drgnwrrr</name>
+    <desc>Dragon Warrior minus the walking: the NES game's rules, played from menus and a map.</desc>
+    <developer>sadbeast</developer>
+    <publisher>sadbeast</publisher>
+    <genre>RPG</genre>
+    <image>./drgnwrrr/screenshot.png</image>
+  </game>
+</gameList>

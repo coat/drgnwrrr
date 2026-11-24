@@ -1,0 +1,380 @@
+/* Pico supplies the controls and type; this makes it dense and dark, with
+   the map running edge to edge and the panel beside it (landscape) or under
+   it (portrait). */
+
+/* Anvil, from ZX Origins by DamienG (https://damieng.com/zx-origins); see assets/LICENSE-anvil-font.md. */
+@font-face {
+  font-family: "Anvil";
+  src: url("assets/Anvil.woff2") format("woff2");
+  font-display: block;
+}
+
+:root {
+  --pixel: "Anvil", ui-monospace, monospace;
+  --ink: #e4e7ea;
+  --dim: #858c93;
+  --rule: #24282c;
+  --accent: #c5cdd4; /* cool light grey: primary buttons */
+  --accent-hover: #e2e7eb;
+  --echo: #9db3c6; /* commands in the log */
+  --gold: #f8b800; /* the game's gold, in the status line only */
+  --hp: #58d854;
+  --mp: #3cbcfc;
+  --bad: #f83800;
+  /* The session's own text (the log, the command line) is monospace; everything else isn't. */
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* Trying the pixel font everywhere: drop these two lines to go back. */
+  --mono: var(--pixel);
+  --pico-font-family: var(--pixel);
+}
+
+/* Keep the pixels crisp. */
+body { -webkit-font-smoothing: none; -moz-osx-font-smoothing: grayscale; font-smooth: never; }
+
+:root[data-theme="dark"] {
+  --pico-background-color: #000;
+  --pico-color: var(--ink);
+  --pico-muted-color: var(--dim);
+  --pico-muted-border-color: var(--rule);
+  --pico-font-size: 13px;
+  /* Grid buttons' text: 13px, or the nearest size that draws each of Anvil's
+     font pixels on whole device pixels (set by app.js for the screen's density). */
+  --glyph: 13px;
+  --pico-line-height: 1.35;
+  --pico-spacing: 0.6rem;
+  --pico-typography-spacing-vertical: 0.5rem;
+  --pico-form-element-spacing-vertical: 0.4rem;
+  --pico-form-element-spacing-horizontal: 0.7rem;
+  --pico-border-radius: 2px;
+  --pico-primary: var(--accent);
+  --pico-primary-background: var(--accent);
+  --pico-primary-border: var(--accent);
+  --pico-primary-underline: var(--accent);
+  --pico-primary-hover: var(--accent-hover);
+  --pico-primary-hover-background: var(--accent-hover);
+  --pico-primary-hover-border: var(--accent-hover);
+  --pico-primary-inverse: #0b0d0f;
+  --pico-primary-focus: rgba(197, 205, 212, 0.3);
+  --pico-secondary-background: #1a1d20;
+  --pico-secondary-border: #1a1d20;
+  --pico-secondary-hover-background: #272b2f;
+  --pico-secondary-hover-border: #272b2f;
+  --pico-secondary-inverse: var(--ink);
+  --pico-form-element-background-color: #0d0f11;
+  --pico-form-element-border-color: #30353a;
+  --pico-form-element-focus-color: var(--accent);
+}
+
+html, body { height: 100%; margin: 0; background: #000; overflow: hidden; }
+
+.layout {
+  display: grid;
+  height: 100vh;
+  height: 100svh;
+  padding: 0;
+  /* --panel-h and --panel-w are set when the divider is dragged (app.js). Beside the map, the
+     panel starts three button columns wide (see .buttons), plus its padding. */
+  --panel-default-w: calc(3 * (8 * var(--glyph) + 0.6rem) + 2 * 4px + 1.5rem);
+  grid-template-rows: minmax(20svh, 1fr) auto minmax(0, var(--panel-h, 52svh));
+  grid-template-columns: 100%;
+}
+
+@media (orientation: landscape) and (min-width: 700px) {
+  .layout {
+    grid-template-rows: 100%;
+    grid-template-columns: minmax(0, 1fr) auto var(--panel-w, min(var(--panel-default-w), 42vw));
+  }
+  #divider { width: 1px; height: auto; cursor: col-resize; }
+}
+
+/* A 1px rule with a wider grip; the grip shows while hovered or dragged. */
+.splitter {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 auto;
+  height: 1px;
+  background: var(--rule);
+  cursor: row-resize;
+  touch-action: none;
+}
+.splitter::before { content: ""; position: absolute; inset: -6px; }
+.splitter:hover, .splitter.dragging { background: var(--dim); }
+
+.stage { position: relative; min-height: 0; min-width: 0; }
+#map {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.mapctl {
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 2.75rem);
+  gap: 4px;
+}
+.mapctl button {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 2px #000);
+}
+.mapctl button:hover, .mapctl button:active { background: rgba(255, 255, 255, 0.12); }
+.mapctl .prompt {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: auto;
+  background: url(assets/atlas.png) no-repeat; /* placed and sized by prompt() in app.js */
+  image-rendering: pixelated;
+}
+
+.hud {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.8rem;
+  font-size: 12px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 0 0.4rem;
+  max-width: calc(100% - 7rem); /* clear of the map buttons */
+}
+.hud .hover { color: var(--ink); }
+
+#panel {
+  min-height: 0;
+  min-width: 0;
+  padding: 0 0.75rem calc(0.5rem + env(safe-area-inset-bottom));
+}
+#panel > .inner { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+/* Under the status line: the log (--log of the room, dragged in app.js), then the controls. */
+.split { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+/* Button grids stretch into the controls' room: the commands, and the grids in menus and
+   prompts (a battle, a full bag). A grid of one wide button (Walk, Grind) keeps its size. */
+.controls > .prompt, .controls > .menu { flex: 1 0 auto; display: flex; flex-direction: column; }
+.prompt > *, .menu > * { flex-shrink: 0; }
+.controls > .main, .prompt > nav.buttons, .menu > nav.buttons { flex: 1 1 auto; grid-auto-rows: minmax(3.25rem, 1fr); }
+.prompt > nav.buttons:has(> .wide:only-child), .menu > nav.buttons:has(> .wide:only-child) { flex: 0 0 auto; }
+/* Several grids under headings (Go: towns, checklist, places) would stretch unevenly: keep them natural. */
+.prompt:has(> nav.buttons ~ nav.buttons) > nav.buttons, .menu:has(> nav.buttons ~ nav.buttons) > nav.buttons { flex: 0 0 auto; grid-auto-rows: minmax(3.25rem, auto); }
+/* A button that starts a fresh row of the grid (the spells in a battle). */
+.buttons > .newrow { grid-column-start: 1; }
+
+/* One line, whatever the numbers: it shrinks a little before it would wrap. */
+.status {
+  flex: 0 0 auto; /* never squeezed by a long menu below */
+  padding: 0.5rem 0 0.4rem;
+  font-size: clamp(0.65rem, 3vw, 0.95rem);
+  font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid var(--rule);
+}
+.status .line {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0 clamp(0.45rem, 2vw, 0.8rem);
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* Where you are: quieter than the stats. */
+.status .where { color: var(--dim); font-size: 0.85em; margin-top: 0.15rem; }
+.status .hp { color: var(--hp); }
+.status .mp { color: var(--mp); }
+.status .gold { color: var(--gold); }
+.status.low, .status.low .hp, .status.low .mp { color: var(--bad); font-weight: 700; }
+
+.controls {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size; /* the button text below is sized to its width */
+}
+.controls > * { flex-shrink: 0; }
+.menu-open .controls { padding-top: 0; }
+
+/* Buttons are how the game is played: big tiles in a tight grid. Every Anvil glyph is 1em wide,
+   so columns are sized in the buttons' em: each holds at least 8 characters (Restore, Items >),
+   and a narrow panel gets fewer columns rather than smaller text. */
+.buttons {
+  display: grid;
+  font-size: var(--glyph);
+  grid-template-columns: repeat(auto-fill, minmax(calc(8em + 0.6rem), 1fr));
+  grid-auto-rows: minmax(3.25rem, auto);
+  gap: 4px;
+  margin: 0 0 4px;
+}
+.buttons:empty { display: none; }
+/* Lists of places and menus: longer labels, so wider tiles. */
+.buttons.list { grid-template-columns: repeat(auto-fill, minmax(calc(9.5em + 1.4rem), 1fr)); }
+.buttons.list > button { padding: 0.45rem 0.7rem; }
+button, .button, [role="button"] { margin: 0; font-size: 1rem; line-height: 1.3; }
+.buttons > button, .buttons > .button, .rows button, .objective button, .menubar button {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.35rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 3px;
+  margin: 0;
+}
+/* Labels wrap between words; a word breaks only if it can't fit a button at all. */
+.buttons > button {
+  padding-inline: 0.3rem;
+  font-size: var(--glyph);
+  overflow-wrap: break-word;
+}
+/* The one thing a menu or prompt is for: a full-width primary button. */
+.buttons > button.wide { grid-column: 1 / -1; }
+.buttons > button small { font-size: 0.8rem; opacity: 0.75; margin-top: 0.1rem; }
+.rows { display: grid; gap: 4px; margin: 0 0 0.4rem; }
+.row {
+  display: grid;
+  grid-template-columns: 1fr minmax(5rem, auto) minmax(6.5rem, auto);
+  gap: 4px;
+  align-items: center;
+  font-size: 0.95rem;
+}
+.row:has(> :nth-child(2):last-child) { grid-template-columns: 1fr minmax(5rem, auto); }
+.menubar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(6.75rem, auto) 1fr;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0.4rem;
+  padding: 0.5rem 0 0.4rem;
+  background: var(--pico-background-color);
+  border-bottom: 1px solid var(--rule);
+}
+.menubar h6 { margin: 0; font-size: 1rem; font-weight: 600; color: var(--ink); }
+label.check { display: block; margin: 0 0 0.6rem; }
+label.check .hint { margin-left: 1.9rem; }
+label.button {
+  display: inline-block;
+  cursor: pointer;
+  padding: var(--pico-form-element-spacing-vertical) var(--pico-form-element-spacing-horizontal);
+  border: 1px solid var(--pico-primary-border);
+  border-radius: var(--pico-border-radius);
+  color: var(--pico-primary);
+  margin: 0;
+}
+
+.menu { padding-top: 0.35rem; }
+
+.menu h6, .prompt h6 {
+  margin: 0.6rem 0 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dim);
+}
+
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 0.4rem; }
+.segmented button { border-radius: 0; min-height: 3rem; }
+.segmented button + button { margin-left: -1px; }
+
+.stepper { display: grid; grid-template-columns: 3.25rem 1fr 3.25rem; gap: 4px; align-items: center; margin: 0 0 0.4rem; }
+.stepper button { min-height: 3.25rem; padding: 0; font-size: 1.3rem; border-radius: 3px; }
+.stepper span { text-align: center; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) { margin-bottom: 0.4rem; }
+label { font-size: 0.9rem; }
+
+.prompt h4, .prompt h5 { margin: 0.2rem 0 0.4rem; }
+.prompt h5 small { color: var(--dim); font-weight: 400; }
+.title h4 { color: var(--ink); }
+
+dl.route {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.1rem 0.9rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+dl.route dt { color: var(--dim); font-weight: 400; margin: 0; }
+dl.route dd { margin: 0; }
+.bad { color: var(--bad); }
+.hint { color: var(--dim); font-size: 0.85rem; margin: 0.2rem 0 0.4rem; }
+
+table { margin: 0 0 0.4rem; font-size: 0.88rem; }
+th, td { padding: 0.2rem 0.4rem; background: transparent; border-bottom-color: var(--rule); }
+td.right, th.right { text-align: right; white-space: nowrap; }
+td.right button + button { margin-left: 0.3rem; }
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  grid-auto-flow: dense;
+  column-gap: 1.2rem;
+  margin: 0 0 0.4rem;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.stats > div {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.4rem;
+  padding: 0.2rem 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+.stats > .wide { grid-column: 1 / -1; }
+.stats .k { color: var(--dim); }
+table.danger { font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+table.danger tr.here td { color: var(--ink); font-weight: 700; }
+
+.checklist { font-size: 0.88rem; }
+.objective {
+  display: grid;
+  grid-template-columns: 1.8rem 1fr 5rem;
+  gap: 0 0.4rem;
+  align-items: start;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.objective .n { color: var(--dim); font-variant-numeric: tabular-nums; }
+.objective .hint { margin: 0.1rem 0 0; }
+.objective.done b { color: var(--dim); text-decoration: line-through; font-weight: 400; }
+
+.log {
+  flex: 0 0 var(--log, 20%);
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.4rem 0;
+  font: 11px/1.45 var(--mono);
+  color: var(--dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.log .cmd { color: var(--echo); margin-top: 0.3rem; }
+.log .fresh { color: var(--ink); }
+.log .cmd.fresh { color: var(--echo); }
+.log .warn { color: var(--bad); }
+
+.cmdline { margin: 0; padding-top: 0.35rem; border-top: 1px solid var(--rule); }
+.cmdline input { margin: 0 !important; font-family: var(--mono); font-size: 0.85rem; padding: 0.3rem 0.5rem; height: auto; }
+
+.about .credit { padding: 0.3rem 0; border-bottom: 1px solid var(--rule); }
+.about .credit .hint { margin: 0.1rem 0 0; }
+.about a { color: var(--ink); }

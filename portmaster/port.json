@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "name": "drgnwrrr.zip",
+  "items": [
+    "drgnwrrr.sh",
+    "drgnwrrr"
+  ],
+  "items_opt": null,
+  "attr": {
+    "title": "drgnwrrr",
+    "desc": "Dragon Warrior minus the walking: the NES game's rules, played from menus and a map.",
+    "inst": "Ready to run.",
+    "genres": [
+      "rpg"
+    ],
+    "porter": [
+      "sadbeast"
+    ],
+    "image": {},
+    "rtr": true,
+    "runtime": null,
+    "reqs": [],
+    "arch": [
+      "aarch64"
+    ]
+  }
+}

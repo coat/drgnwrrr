@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Optional dev dependency for smoke.cjs (the page itself needs nothing).",
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}
