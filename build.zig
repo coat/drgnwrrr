@@ -283,8 +283,10 @@ fn sdlModule(
     // Function and data sections, so the linker drops the parts of Clay we
     // never call.
     mod.addCSourceFile(.{ .file = b.path("src/sdl/clay.c"), .flags = &.{ "-std=c99", "-ffunction-sections", "-fdata-sections" } });
-    // Nothing unwinds the stack (see std_options in main.zig).
-    mod.unwind_tables = .none;
+    // Nothing unwinds the stack (see std_options in main.zig). Except on
+    // Windows: the flag reaches the mingw libc build, and winpthreads' SEH
+    // handlers don't assemble without unwind tables.
+    if (target.result.os.tag != .windows) mod.unwind_tables = .none;
     if (sdl) |dep| {
         mod.linkLibrary(dep.artifact("SDL3"));
         translator.linkLibrary(dep.artifact("SDL3"));
