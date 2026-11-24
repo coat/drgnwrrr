@@ -365,4 +365,3 @@ test "Rimuldar is only reachable through the Swamp Cave" {
     defer p.deinit(std.testing.allocator);
     try std.testing.expect(p.via_cave);
 }
-

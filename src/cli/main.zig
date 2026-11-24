@@ -291,8 +291,8 @@ const Cli = struct {
             if (o.count > 1) try out.print(" x{d}", .{o.count});
         }
         try out.print("\n  {s}Weapon{s} {s}{s}{s}  {s}Armor{s} {s}{s}{s}  {s}Shield{s} {s}{s}{s}\n", .{
-            dim, r, bold, game.equipName(0, g.equip.weapon) orelse "none", r,
-            dim, r, bold, game.equipName(7, g.equip.armor) orelse "none", r,
+            dim, r, bold, game.equipName(0, g.equip.weapon) orelse "none",  r,
+            dim, r, bold, game.equipName(7, g.equip.armor) orelse "none",   r,
             dim, r, bold, game.equipName(14, g.equip.shield) orelse "none", r,
         });
         if (h.spells.bits != 0) {

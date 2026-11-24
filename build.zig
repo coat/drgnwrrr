@@ -373,7 +373,7 @@ fn fixLibcFiles(b: *std.Build, apk: anytype, step: *std.Build.Step, seen: *std.A
         else => "arm-linux-androideabi",
     };
     const sysroot = apk.ndk.sysroot_path;
-    const crt_dir = b.fmt("{s}/usr/lib/{s}/{d}", .{ sysroot, triple, @intFromEnum(apk.api_level) });
+    const crt_dir = b.fmt("{s}/usr/lib/{s}/{d}", .{ sysroot, triple, @backingInt(apk.api_level) });
     compile.setLibCFile(b.addWriteFiles().add(b.fmt("libc-{s}.conf", .{triple}), b.fmt(
         \\include_dir={s}/usr/include
         \\sys_include_dir={s}/usr/include/{s}

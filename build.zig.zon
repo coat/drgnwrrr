@@ -2,7 +2,7 @@
     .name = .drgnwrrr,
     .version = "0.1.0",
     .fingerprint = 0x7b18699b38aef510, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.1",
     .dependencies = .{
         .isocline = .{
             .url = "git+https://github.com/daanx/isocline#8d6dc1ef95b1b46711e66eb23d39d4467a0fcdac",

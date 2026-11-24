@@ -1853,8 +1853,8 @@ fn checkTreasure() !void {
     {
         const sec: Section = .begin();
         const spots = [_]dw.Warp{
-            .{ .map = 0x01, .x = 83, .y = 113 }, .{ .map = 0x07, .x = 9, .y = 6 },  .{ .map = 0x03, .x = 18, .y = 12 },
-            .{ .map = 0x02, .x = 10, .y = 1 },   .{ .map = 0x02, .x = 10, .y = 3 }, .{ .map = 0x02, .x = 10, .y = 2 },
+            .{ .map = 0x01, .x = 83, .y = 113 }, .{ .map = 0x07, .x = 9, .y = 6 },    .{ .map = 0x03, .x = 18, .y = 12 },
+            .{ .map = 0x02, .x = 10, .y = 1 },   .{ .map = 0x02, .x = 10, .y = 3 },   .{ .map = 0x02, .x = 10, .y = 2 },
             .{ .map = 0x04, .x = 1, .y = 13 },   .{ .map = 0x01, .x = 83, .y = 112 }, .{ .map = 0x04, .x = 5, .y = 5 },
         };
         for (spots) |at| for (0..cases / 10) |_| {

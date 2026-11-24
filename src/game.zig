@@ -10,7 +10,6 @@ const Writer = std.Io.Writer;
 /// Bank 0's maps and NPC tables, extracted from the ROM at build time.
 pub const maps: *const dw.Maps = &@import("romdata").maps;
 
-
 pub const Game = struct {
     rng: dw.Rng,
     /// ASCII, padded with spaces. Only name-tile characters are allowed.
@@ -794,11 +793,11 @@ pub fn findTown(name: []const u8) ?*const Town {
 
 /// dw.prices order.
 pub const shop_names = [33][]const u8{
-    "Bamboo Pole",  "Club",           "Copper Sword",   "Hand Axe",       "Broad Sword",  "Flame Sword",     "Erdrick's Sword",
-    "Clothes",      "Leather Armor",  "Chain Mail",     "Half Plate",     "Full Plate",   "Magic Armor",     "Erdrick's Armor",
-    "Small Shield", "Large Shield",   "Silver Shield",  "Herb",           "Magic Key",    "Torch",           "Fairy Water",
-    "Wings",        "Dragon's Scale", "Fairy Flute",    "Fighter's Ring", "Erdrick's Token", "Gwaelin's Love", "Cursed Belt",
-    "Silver Harp",  "Death Necklace", "Stones of Sunlight", "Staff of Rain", "Rainbow Drop",
+    "Bamboo Pole",  "Club",           "Copper Sword",       "Hand Axe",       "Broad Sword",     "Flame Sword",    "Erdrick's Sword",
+    "Clothes",      "Leather Armor",  "Chain Mail",         "Half Plate",     "Full Plate",      "Magic Armor",    "Erdrick's Armor",
+    "Small Shield", "Large Shield",   "Silver Shield",      "Herb",           "Magic Key",       "Torch",          "Fairy Water",
+    "Wings",        "Dragon's Scale", "Fairy Flute",        "Fighter's Ring", "Erdrick's Token", "Gwaelin's Love", "Cursed Belt",
+    "Silver Harp",  "Death Necklace", "Stones of Sunlight", "Staff of Rain",  "Rainbow Drop",
 };
 
 pub fn itemName(item: dw.Item) []const u8 {
