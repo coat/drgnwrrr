@@ -3,3 +3,11 @@ zig-out
 .zig-cache
 
 *.nes
+
+# Android signing keys
+*.jks
+
+# tools/package.sh output
+/out/
+/dist/
+/drgnwrrr-*/
