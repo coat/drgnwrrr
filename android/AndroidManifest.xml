@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- SDL's android-project manifest, trimmed. The package is build.zig's android_package. -->
+<!-- SDL's android-project manifest, trimmed. The package is build.zig's android_package;
+     build.zig fills in the versions from build.zig.zon. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="1"
-    android:versionName="0.1.0"
+    android:versionCode="@VERSION_CODE@"
+    android:versionName="@VERSION_NAME@"
     android:installLocation="auto"
     package="com.sadbeast.drgnwrrr">
 

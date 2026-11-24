@@ -311,6 +311,20 @@ const android_package = "com.sadbeast.drgnwrrr";
 /// native game, built as libmain.so, with SDL3 built in. `run` installs and
 /// starts it on the device adb sees.
 fn addAndroid(b: *std.Build, optimize: std.builtin.Optimize, romdata: std.Build.LazyPath, atlas: std.Build.LazyPath) void {
+    // Declared before the early returns: on the first run the lazy android
+    // package isn't fetched yet, and an undeclared -D option fails the build
+    // before Zig gets to fetch it.
+    const keystore = b.option(
+        []const u8,
+        "android_keystore",
+        "Sign the APK with this keystore, its password read from $ANDROID_KEYSTORE_PASSWORD. Default: a throwaway debug key",
+    );
+    const every_abi = b.option(
+        bool,
+        "android_abis",
+        "Put every Android ABI in the APK (x86_64, armeabi-v7a, x86) instead of arm64-v8a alone",
+    ) orelse false;
+
     if (b.graph.environ_map.get("ANDROID_HOME") == null) {
         b.getInstallStep().dependOn(&b.addFail("ANDROID_HOME is not set: run in the flake's devShell (nix develop)").step);
         return;
@@ -323,9 +337,19 @@ fn addAndroid(b: *std.Build, optimize: std.builtin.Optimize, romdata: std.Build.
         .build_tools_version = "36.1.0",
         .ndk_version = "29.0.14206865",
     });
-    // A throwaway debug key: enough for `adb install`, not for the Play Store.
-    apk.setKeyStore(sdk.createKeyStore(.example));
-    apk.setAndroidManifest(b.path("android/AndroidManifest.xml"));
+    if (keystore) |path| {
+        // Exits instead of adding a fail step, which would leave the steps
+        // below undeclared and hide this error behind "no step named".
+        const password = b.graph.environ_map.get("ANDROID_KEYSTORE_PASSWORD") orelse {
+            std.log.err("-Dandroid_keystore needs ANDROID_KEYSTORE_PASSWORD set", .{});
+            std.process.exit(1);
+        };
+        apk.setKeyStore(.{ .file = .{ .cwd_relative = path }, .password = password });
+    } else {
+        // A throwaway debug key: enough for `adb install`, not for the Play Store.
+        apk.setKeyStore(sdk.createKeyStore(.example));
+    }
+    apk.setAndroidManifest(androidManifest(b));
 
     // The launcher icon is the window's (looks.icon), at 256 px; Android
     // scales it for the screen's density.
@@ -334,11 +358,6 @@ fn addAndroid(b: *std.Build, optimize: std.builtin.Optimize, romdata: std.Build.
     _ = res.addCopyFile(atlas.path(b, "icon-256.png"), "mipmap-xxxhdpi/ic_launcher.png");
     apk.addResourceDirectory(res.getDirectory());
 
-    const every_abi = b.option(
-        bool,
-        "android_abis",
-        "Put every Android ABI in the APK (x86_64, armeabi-v7a, x86) instead of arm64-v8a alone",
-    ) orelse false;
     // Debug builds are too slow for the route planner's battle sims.
     const mode: std.builtin.Optimize = if (optimize == .debug) .small else optimize;
     var java_added = false;
@@ -364,6 +383,18 @@ fn addAndroid(b: *std.Build, optimize: std.builtin.Optimize, romdata: std.Build.
     const start = sdk.addAdbStart(android_package ++ "/org.libsdl.app.SDLActivity");
     start.step.dependOn(&sdk.addAdbInstall(installed.source).step);
     b.step("run", "Install the APK on the device adb sees, and start it").dependOn(&start.step);
+}
+
+/// android/AndroidManifest.xml with build.zig.zon's version filled in, so
+/// each release installs over the one before it.
+fn androidManifest(b: *std.Build) std.Build.LazyPath {
+    const version = comptime std.SemanticVersion.parse(@import("build.zig.zon").version) catch unreachable;
+    // Android compares versionCode, which must grow with every release.
+    const code = version.major * 10000 + version.minor * 100 + version.patch;
+    var manifest: []const u8 = @embedFile("android/AndroidManifest.xml");
+    manifest = std.mem.replaceOwned(u8, b.allocator, manifest, "@VERSION_CODE@", b.fmt("{d}", .{code})) catch @panic("OOM");
+    manifest = std.mem.replaceOwned(u8, b.allocator, manifest, "@VERSION_NAME@", b.fmt("{f}", .{version})) catch @panic("OOM");
+    return b.addWriteFiles().add("AndroidManifest.xml", manifest);
 }
 
 /// Points every compile under `step` that has a libc file at one for its
