@@ -6,6 +6,8 @@ Dragon Warrior's rules without the walking, dialogue and drama. You say where to
 risk you'll take; the game walks the route tile by tile with the original's encounter rules and
 stops for battles and decisions.
 
+Play [online](https://coat.github.io/drgnwrrr/).
+
 ## Building
 
 The maps and NPC tables come from a Dragon Warrior (U) ROM, which isn't included. `zig build`
